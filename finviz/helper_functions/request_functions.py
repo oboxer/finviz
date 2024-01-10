@@ -53,6 +53,8 @@ def http_request_get(
 @tenacity.retry(wait=tenacity.wait_exponential())
 def finviz_request(url: str, user_agent: str) -> Response:
     response = requests.get(url, headers={"User-Agent": user_agent})
+    if response.status_code == 429 and response.text.startswith("This IP address has performed an unusual high number"):
+        raise Exception("This IP address has performed an unusual high number")
     if response.text == "Too many requests.":
         raise Exception("Too many requests.")
     return response
