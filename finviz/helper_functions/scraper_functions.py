@@ -151,11 +151,25 @@ def download_ticker_details(page_content: requests.Response, **kwargs):
         row.xpath("td//text()")
         for row in page_parsed.cssselect('tr[class="table-dark-row"]')
     ]
+    flattened_list = []
+    for rows in all_rows:
+        prev_item = ""
+        for item in rows:
+            # detects '\r\n    ' and '\r\n'
+            if prev_item.strip() == item.strip():
+                prev_item = item
+                continue
+            prev_item = item
+            flattened_list.append(item)
 
-    for row in all_rows:
-        for column in range(0, 11):
-            if column % 2 == 0:
-                data[row[column]] = row[column + 1]
+    for i in range(0, len(flattened_list), 2):
+        key = flattened_list[i]
+        value = flattened_list[i + 1]
+        # If key already exists in dictionary, append value to comma-separated string
+        if key in data:
+            data[key] += ',' + value
+        else:
+            data[key] = value
 
     if len(data) == 0:
         print(f"-> Unable to parse page for ticker: {ticker}")
