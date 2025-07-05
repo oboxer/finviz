@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "finviz-platform"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
     {name = "Alberto Rincones", email = "code4road@gmail.com"},
 ]

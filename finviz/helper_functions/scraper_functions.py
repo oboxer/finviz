@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import time
 
 import requests
@@ -41,9 +42,10 @@ def get_table(page_html: requests.Response, headers, rows=None, **kwargs):
 def get_total_rows(page_content):
     """ Returns the total number of rows(results). """
 
-    options=[('class="count-text whitespace-nowrap">#1 / ',' Total</div>'),('class="count-text">#1 / ',' Total</td>')]
+    options = [('class="count-text whitespace-nowrap">#1 / ', ' Total</div>'),
+               ('class="count-text">#1 / ', ' Total</td>')]
     page_text = str(html.tostring(page_content))
-    for option_beg,option_end in options:
+    for option_beg, option_end in options:
         if option_beg in page_text:
             total_number = page_text.split(option_beg)[1].split(option_end)[0]
             try:
@@ -83,7 +85,7 @@ def download_chart_image(page_content: requests.Response, **kwargs):
 
 
 def get_analyst_price_targets_for_export(
-    ticker=None, page_content=None, last_ratings=5
+        ticker=None, page_content=None, last_ratings=5
 ):
     analyst_price_targets = []
 
@@ -142,6 +144,52 @@ def get_analyst_price_targets_for_export(
     return analyst_price_targets
 
 
+def clean_and_tuple_list(data: list[str]) -> list[tuple[str, str]]:
+    """
+    Cleans a list of key-value pairs, handling malformed entries and
+    converts it into a tuple of (key, value) pairs.
+
+    A valid key must contain at least one alphabetic character (A-Z, a-z)
+    and consist only of alphanumeric characters (A-Z, a-z, 0-9).
+
+    For values, if the next stripped element is '-', the value is set to '-'.
+    Otherwise, the value is the stripped next element.
+
+    Args:
+        data: A list of strings representing key-value pairs.
+
+    Returns:
+        A tuple of (key, value) pairs.
+    """
+    cleaned_pairs = []
+    i: int = 0
+    while i < len(data):
+        key: str = data[i].strip()
+
+        # Validate key: Must contain at least two alphabetic characters.
+        # This uses re.findall to find all matches of [a-zA-Z] and checks if the count is >= 2.
+        if len(re.findall(r'[a-zA-Z]', key)) < 2:
+            i += 1
+            continue
+
+        # If a valid key is found, determine its value
+        if i + 1 < len(data):
+            next_element_stripped: str = data[i + 1].strip()
+
+            if next_element_stripped == '-':
+                value = '-'
+            else:
+                value = next_element_stripped
+            cleaned_pairs.append((key, value))
+            i += 2  # Move past the key and its value
+        else:
+            # If a key exists but no subsequent element for a value, treat value as empty
+            cleaned_pairs.append((key, '-'))
+            i += 1  # Move past the key
+
+    return cleaned_pairs
+
+
 def download_ticker_details(page_content: requests.Response, **kwargs):
     data = {}
     ticker = kwargs["URL"].split("=")[1]
@@ -151,20 +199,8 @@ def download_ticker_details(page_content: requests.Response, **kwargs):
         row.xpath("td//text()")
         for row in page_parsed.cssselect('tr[class="table-dark-row"]')
     ]
-    flattened_list = []
-    for rows in all_rows:
-        prev_item = ""
-        for item in rows:
-            # detects '\r\n    ' and '\r\n'
-            if prev_item.strip() == item.strip():
-                prev_item = item
-                continue
-            prev_item = item
-            flattened_list.append(item)
-
-    for i in range(0, len(flattened_list), 2):
-        key = flattened_list[i]
-        value = flattened_list[i + 1]
+    flattened_list = clean_and_tuple_list([item for sublist in all_rows for item in sublist])
+    for key, value in flattened_list:
         # If key already exists in dictionary, append value to comma-separated string
         if key in data:
             data[key] += ',' + value
