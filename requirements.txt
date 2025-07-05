@@ -1,10 +1,10 @@
 finviz~=1.4.4
 beautifulsoup4~=4.9.3
-requests~=2.32.3
-aiohttp~=3.9.5
+requests~=2.32.4
+aiohttp~=3.12.13
 lxml~=5.2.2
-urllib3~=1.26.5
+urllib3~=2.5.0
 user_agent~=0.1.9
 cssselect~=1.1.0
-tqdm~=4.61.1
-tenacity~=7.0.0
+tqdm~=4.67.1
+tenacity~=9.1.2
