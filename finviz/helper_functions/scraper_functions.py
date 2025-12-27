@@ -4,7 +4,7 @@ import re
 import time
 
 import requests
-from lxml import etree, html
+from lxml import html
 
 
 def get_table(page_html: requests.Response, headers, rows=None, **kwargs):

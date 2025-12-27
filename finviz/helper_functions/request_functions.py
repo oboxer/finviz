@@ -3,6 +3,7 @@ import os
 from typing import Callable, Dict, List
 
 import aiohttp
+import cloudscraper
 import requests
 import tenacity
 import urllib3
@@ -16,6 +17,7 @@ from finviz.helper_functions.error_handling import ConnectionTimeout
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+scraper = cloudscraper.create_scraper()
 
 def http_request_get(
     url, session=None, payload=None, parse=True, user_agent=generate_user_agent()
@@ -26,20 +28,7 @@ def http_request_get(
         payload = {}
 
     try:
-        if session:
-            content = session.get(
-                url,
-                params=payload,
-                verify=False,
-                headers={"User-Agent": user_agent},
-            )
-        else:
-            content = requests.get(
-                url,
-                params=payload,
-                verify=False,
-                headers={"User-Agent": user_agent},
-            )
+        content = scraper.get(url, params=payload)
 
         content.raise_for_status()  # Raise HTTPError for bad requests (4xx or 5xx)
         if parse:
@@ -52,7 +41,7 @@ def http_request_get(
 
 @tenacity.retry(wait=tenacity.wait_exponential())
 def finviz_request(url: str, user_agent: str) -> Response:
-    response = requests.get(url, headers={"User-Agent": user_agent})
+    response = scraper.get(url)
     if response.status_code == 429 and response.text.startswith("This IP address has performed an unusual high number"):
         raise Exception("This IP address has performed an unusual high number")
     if response.text == "Too many requests.":
