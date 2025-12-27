@@ -24,6 +24,7 @@ dependencies =[
     "beautifulsoup4",
     "tqdm",
     "tenacity",
+    "cloudscraper-enhanced",
 ]
 
 requires-python = ">=3.8"
