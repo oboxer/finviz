@@ -6,6 +6,22 @@ import requests
 from lxml import etree, html
 
 
+def get_row_values(row):
+    """ Returns the text of every cell in a table row. """
+
+    values = []
+
+    for cell in row.cssselect("td"):
+        # The ticker cell holds a logo anchor whose fallback letter would
+        # otherwise be read as a column of its own and shift the whole row.
+        for logo in cell.cssselect("a.company-ticker"):
+            logo.getparent().remove(logo)
+
+        values.append(cell.text_content().strip())
+
+    return values
+
+
 def get_table(page_html: requests.Response, headers, rows=None, **kwargs):
     """ Private function used to return table data inside a list of dictionaries. """
     if isinstance(page_html, str):
@@ -21,7 +37,7 @@ def get_table(page_html: requests.Response, headers, rows=None, **kwargs):
     data_sets = []
     # Select the HTML of the rows and append each column text to a list
     all_rows = [
-        column.xpath("td//text()")
+        get_row_values(column)
         for column in page_parsed.cssselect('tr[valign="top"]')
     ]
 
